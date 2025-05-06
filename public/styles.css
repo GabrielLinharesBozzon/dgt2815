@@ -1,0 +1,36 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+.btn-action {
+    margin-right: 5px;
+}
+
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.9em;
+}
+
+.status-pending {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.status-in-progress {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.status-completed {
+    background-color: #28a745;
+    color: #fff;
+} 
