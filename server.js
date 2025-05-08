@@ -9,13 +9,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Database configuration
+// Database configuration for XAMPP
 const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'tasks_db'
+    host: 'localhost',
+    port: 3306,
+    user: 'root',
+    password: '', // XAMPP default password is empty
+    database: 'tasks_db'
 };
 
 console.log('Attempting to connect to database with config:', {
@@ -23,60 +23,67 @@ console.log('Attempting to connect to database with config:', {
     password: '****' // Hide password in logs
 });
 
-// Database connection
+// Create initial connection without database
+const initialConnection = mysql.createConnection({
+    host: dbConfig.host,
+    port: dbConfig.port,
+    user: dbConfig.user,
+    password: dbConfig.password
+});
+
+// Create database and table
+initialConnection.connect((err) => {
+    if (err) {
+        console.error('Error connecting to MySQL:', err);
+        return;
+    }
+
+    console.log('Connected to MySQL server successfully');
+
+    // Create database
+    initialConnection.query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`, (err) => {
+        if (err) {
+            console.error('Error creating database:', err);
+            return;
+        }
+
+        console.log('Database created successfully');
+
+        // Create table
+        initialConnection.query(`USE ${dbConfig.database}`, (err) => {
+            if (err) {
+                console.error('Error selecting database:', err);
+                return;
+            }
+
+            initialConnection.query(`
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    title VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )
+            `, (err) => {
+                if (err) {
+                    console.error('Error creating table:', err);
+                    return;
+                }
+                console.log('Table created successfully');
+                initialConnection.end();
+            });
+        });
+    });
+});
+
+// Create database connection
 const db = mysql.createConnection(dbConfig);
 
 // Connect to database
 db.connect((err) => {
     if (err) {
         console.error('Error connecting to database:', err);
-        // Try to create database if it doesn't exist
-        if (err.code === 'ER_BAD_DB_ERROR') {
-            const tempConnection = mysql.createConnection({
-                host: dbConfig.host,
-                port: dbConfig.port,
-                user: dbConfig.user,
-                password: dbConfig.password
-            });
-
-            tempConnection.connect((err) => {
-                if (err) {
-                    console.error('Error connecting to MySQL:', err);
-                    return;
-                }
-
-                console.log('Connected to MySQL server successfully');
-
-                // Create database
-                tempConnection.query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`, (err) => {
-                    if (err) {
-                        console.error('Error creating database:', err);
-                        return;
-                    }
-
-                    console.log('Database created successfully');
-                    tempConnection.end();
-
-                    // Create table
-                    db.query(`
-                        CREATE TABLE IF NOT EXISTS tasks (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            title VARCHAR(255) NOT NULL,
-                            description TEXT,
-                            status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                        )
-                    `, (err) => {
-                        if (err) {
-                            console.error('Error creating table:', err);
-                            return;
-                        }
-                        console.log('Table created successfully');
-                    });
-                });
-            });
-        }
         return;
     }
     console.log('Successfully connected to MySQL database');
